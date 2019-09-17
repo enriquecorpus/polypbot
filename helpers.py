@@ -3,12 +3,14 @@ import polypbot
 import constants
 import asyncio
 import concurrent.futures
+import schedule
+import time
 
 
 class SlackHelper:
 
     def __init__(self):
-        self.slack_token = 'xoxb-761143478773-760710426068-SAL1D8gTJ0zTa1xW4rqo3Sv5'  # bot_token
+        self.slack_token = 'xoxb-761143478773-760710426068-fMoEHKP2CBEm3KibBwHAOj6H'  # bot_token
         self.client = slack.WebClient(token=self.slack_token)
         self.loop = None
         self.executor = None
@@ -17,22 +19,22 @@ class SlackHelper:
 
         # self.rtm_client.stop()
 
-    def run_rtm(self):
+    def run(self):
+        self.send_notification_to_users()
         asyncio.run(self.start_rtm())
 
-    @staticmethod
-    def sync_loop():
-        import datetime
-        import time
+    def schedule_checker(self):
+        # schedule.every().day.at("08:33").do(self.send_notification_to_users)
+        schedule.every(120).seconds.do(self.send_notification_to_users)
         while True:
-            print("Hi there: ", datetime.datetime.now())
+            schedule.run_pending()
             time.sleep(5)
 
     async def start_rtm(self):
         self.loop = asyncio.get_event_loop()
         self.rtm_client = slack.RTMClient(token=self.slack_token, run_async=True, loop=self.loop)
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        await asyncio.gather(self.loop.run_in_executor(self.executor, self.sync_loop), self.rtm_client.start())
+        await asyncio.gather(self.loop.run_in_executor(self.executor, self.schedule_checker), self.rtm_client.start())
 
     def post_message_with_block_template(self, blocks, uid: str) -> bool:
         response = self.client.chat_postMessage(
@@ -51,8 +53,10 @@ class SlackHelper:
         if response["ok"]:
             return True
 
-    def send_notification_to_users(self, message, blocks):
+    def send_notification_to_users(self):
         constants.CHECK_INS = {}
+        message = polypbot.Constants.GREETINGS
+        blocks = polypbot.Constants.GREETINGS_BLOCK
         users_list = self.client.users_list().get('members', None)
         if users_list:
             for u in users_list:
@@ -74,7 +78,6 @@ class SlackHelper:
                 except KeyError:
                     pass
 
-    #   TODO MAKE IT ASYNC? LOOKS LIKE ITS A BLOCKING PROCESS
     @slack.RTMClient.run_on(event='message')
     async def parse_slack_message(**payload):
         data = payload['data']
