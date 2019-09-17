@@ -1,18 +1,38 @@
 import slack
 import polypbot
 import constants
+import asyncio
+import concurrent.futures
 
 
 class SlackHelper:
 
     def __init__(self):
-        self.slack_token = 'xoxb-761143478773-760710426068-6C0NhW3simtboAzSRHEFPnaH'  # bot_token
+        self.slack_token = 'xoxb-761143478773-760710426068-SAL1D8gTJ0zTa1xW4rqo3Sv5'  # bot_token
         self.client = slack.WebClient(token=self.slack_token)
-        self.rtm_client = slack.RTMClient(token=self.slack_token)
+        self.loop = None
+        self.executor = None
+        self.rtm_client = None
         self.check_ins = {}
 
-    def start_rtm(self):
-        self.rtm_client.start()
+        # self.rtm_client.stop()
+
+    def run_rtm(self):
+        asyncio.run(self.start_rtm())
+
+    @staticmethod
+    def sync_loop():
+        import datetime
+        import time
+        while True:
+            print("Hi there: ", datetime.datetime.now())
+            time.sleep(5)
+
+    async def start_rtm(self):
+        self.loop = asyncio.get_event_loop()
+        self.rtm_client = slack.RTMClient(token=self.slack_token, run_async=True, loop=self.loop)
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        await asyncio.gather(self.loop.run_in_executor(self.executor, self.sync_loop), self.rtm_client.start())
 
     def post_message_with_block_template(self, blocks, uid: str) -> bool:
         response = self.client.chat_postMessage(
@@ -56,7 +76,7 @@ class SlackHelper:
 
     #   TODO MAKE IT ASYNC? LOOKS LIKE ITS A BLOCKING PROCESS
     @slack.RTMClient.run_on(event='message')
-    def parse_slack_message(**payload):
+    async def parse_slack_message(**payload):
         data = payload['data']
         web_client = payload['web_client']
         rtm_client = payload['rtm_client']
