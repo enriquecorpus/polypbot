@@ -1,15 +1,24 @@
 import slack
 import polypbot
 import constants
+import schedule
+import time
+import asyncio
 
 
 class SlackHelper:
 
     def __init__(self):
-        self.slack_token = 'xoxb-761143478773-760710426068-6C0NhW3simtboAzSRHEFPnaH'  # bot_token
+        self.slack_token = 'xoxb-761143478773-760710426068-A0W7zgDV0zFV7dpGL8swq0JO'  # bot_token
         self.client = slack.WebClient(token=self.slack_token)
         self.rtm_client = slack.RTMClient(token=self.slack_token)
         self.check_ins = {}
+
+    def run(self):
+        schedule.every(15).seconds.do(self.send_notification_to_users)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
 
     def start_rtm(self):
         self.rtm_client.start()
@@ -31,8 +40,10 @@ class SlackHelper:
         if response["ok"]:
             return True
 
-    def send_notification_to_users(self, message, blocks):
+    def send_notification_to_users(self):
         constants.CHECK_INS = {}
+        message = polypbot.Constants.GREETINGS
+        blocks = polypbot.Constants.GREETINGS_BLOCK
         users_list = self.client.users_list().get('members', None)
         if users_list:
             for u in users_list:
