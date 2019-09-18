@@ -5,12 +5,12 @@ import asyncio
 import concurrent.futures
 import schedule
 import time
-
+import secret
 
 class SlackHelper:
 
     def __init__(self):
-        self.slack_token = 'xoxb-761143478773-760710426068-fMoEHKP2CBEm3KibBwHAOj6H'  # bot_token
+        self.slack_token = secret.SLACK_BOT_ACCESS_TOKEN
         self.client = slack.WebClient(token=self.slack_token)
         self.loop = None
         self.executor = None
