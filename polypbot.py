@@ -23,7 +23,7 @@ class Standup:
         self.account_name = account_name
         self.photo_url = photo_url
         self.stand_up_answers = []
-        self.is_done = False
+        self.submitted = False
 
     def add_user_answer(self, phrase: str):
         if not self.user_answered_all_questions and phrase:
