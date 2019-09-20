@@ -1,6 +1,6 @@
-import helpers
+import bot
 
 if __name__ == "__main__":
-    _slack = helpers.SlackHelper()
-    _slack.run()
+    _polypbot = bot.PolypBot()
+    _polypbot.run()
 
