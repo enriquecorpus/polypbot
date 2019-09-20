@@ -19,7 +19,7 @@ class PolypBot:
         self.executor = None
         self.rtm_client = None
         self.bot_name = 'polypbot'
-        self.check_ins = {}  # TODO: Refactor, use *this* variable instead of global variable 'CHECK_INS'
+        self.check_ins = {}  # TODO: Refactor, use *this* variable instead of global variable 'CHECK_INS '
 
     def run(self):
         self.send_notification_to_users()
