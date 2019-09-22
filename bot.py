@@ -8,6 +8,7 @@ import time
 import secret
 import services
 import decorators
+import logging
 
 
 class PolypBot:
@@ -22,6 +23,7 @@ class PolypBot:
         self.check_ins = {}  # TODO: Refactor, use *this* variable instead of global variable 'CHECK_INS '
 
     def run(self):
+        constants.CHECK_INS = {}
         self.send_notification_to_users()
         asyncio.run(self.start_rtm())
 
@@ -38,9 +40,9 @@ class PolypBot:
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         await asyncio.gather(self.loop.run_in_executor(self.executor, self.schedule_checker), self.rtm_client.start())
 
-    def post_message_with_block_template(self, blocks, uid: str) -> bool:
+    def post_message_with_block_template(self, blocks, uid_as_channel: str) -> bool:
         response = self.client.chat_postMessage(
-            channel=uid,
+            channel=uid_as_channel,
             blocks=blocks,
             as_user=True)
         if response["ok"]:
@@ -56,28 +58,25 @@ class PolypBot:
 
     @decorators.with_logging
     def send_notification_to_users(self):
-        constants.CHECK_INS = {}
-        message = checkin.Constants.GREETINGS
-        blocks = checkin.Constants.GREETINGS_BLOCK
+        message = checkin.Messages.GREETINGS
+        blocks = checkin.Messages.GREETINGS_BLOCK
         users_list = self.client.users_list().get('members', None)
         if users_list:
             for u in users_list:
                 try:
                     user_id = u['id']
                     if user_id and user_id not in constants.CHECK_INS and not u['deleted'] and not u['is_bot']:
+                        stand_up = checkin.Standup(account_id=user_id,
+                                                   account_name=u.get('profile').get('real_name', self.bot_name),
+                                                   photo_url=u.get('profile').get('image_48', ''))
                         message_ = message.format(user=user_id, dept='IT DEPT',
-                                                  first_standup_question=checkin.Constants.STAND_UP_QUESTIONS[1])
+                                                  first_standup_question=stand_up.first_question)
                         blocks[0]['text']['text'] = message_
-                        if self.post_message_with_block_template(uid=user_id,
+                        if self.post_message_with_block_template(uid_as_channel=user_id,
                                                                  blocks=blocks):
-                            constants.CHECK_INS[user_id] = checkin.Standup(account_id=user_id,
-                                                                           account_name=u.get('profile').get(
-                                                                               'real_name',
-                                                                               self.bot_name),
-                                                                           photo_url=u.get('profile').get('image_48',
-                                                                                                          ''))
+                            constants.CHECK_INS[user_id] = stand_up
                 except KeyError:
-                    pass
+                    logging.error('Error parsing user data. \n {data}'.format(data=u))
 
     @slack.RTMClient.run_on(event='message')
     async def parse_slack_message(**payload):
@@ -93,7 +92,9 @@ class PolypBot:
         if user_id in constants.CHECK_INS:
             user_check_in = constants.CHECK_INS[user_id]
             user_check_in.add_user_answer(data.get('text'))
-            if user_check_in.user_answered_all_questions and not user_check_in.submitted:
+            if user_check_in.submitted:
+                return
+            elif user_check_in.user_answered_all_questions and not user_check_in.submitted:
                 message = '<@{user}> posted an update for *IT Daily Standup*. \n\n {result}'.format(
                     user=user_id, result=user_check_in.result)
                 channel = '#random'
@@ -111,8 +112,5 @@ class PolypBot:
                 message = '*{}*'.format(user_check_in.get_next_stand_up_question)
                 channel = user_id
                 as_user = True
-            try:
-                web_client.chat_postMessage(channel=channel, text=message, as_user=as_user, username=username,
-                                            icon_url=icon_url)
-            except():
-                raise Exception("Unknown Err")
+            web_client.chat_postMessage(channel=channel, text=message, as_user=as_user, username=username,
+                                        icon_url=icon_url)
