@@ -25,8 +25,8 @@ class PolypBot:
     def run(self):
         constants.CHECK_INS = {}
         self.send_notification_to_users()
-        self.start_rtm()
-        # asyncio.run(self.start_rtm())
+        # self.start_rtm()
+        asyncio.run(self.start_rtm())
 
     def schedule_checker(self):
         # schedule.every().day.at("08:00").do(self.send_notification_to_users)
@@ -37,9 +37,11 @@ class PolypBot:
 
     async def start_rtm(self):
         self.loop = asyncio.get_event_loop()
-        self.rtm_client = slack.RTMClient(token=self.slack_token, run_async=True, loop=self.loop)
+        self.rtm_client = slack.RTMClient(token=self.slack_token, run_async=True, loop=self.loop, timeout=300,
+                                          auto_reconnect=True)
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        await asyncio.gather(self.loop.run_in_executor(self.executor, self.schedule_checker), self.rtm_client.start())
+        await asyncio.gather(
+            self.loop.run_in_executor(self.executor, self.schedule_checker), self.rtm_client.start())
 
     def post_message_with_block_template(self, blocks, uid_as_channel: str) -> bool:
         response = self.client.chat_postMessage(

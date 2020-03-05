@@ -6,6 +6,7 @@ app = flask.Flask(__name__)
 
 @app.route('/')
 def index():
+
     _polypbot = bot.PolypBot()
     _polypbot.run()
     response = app.response_class(
