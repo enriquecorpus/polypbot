@@ -25,7 +25,8 @@ class PolypBot:
     def run(self):
         constants.CHECK_INS = {}
         self.send_notification_to_users()
-        asyncio.run(self.start_rtm())
+        self.start_rtm()
+        # asyncio.run(self.start_rtm())
 
     def schedule_checker(self):
         # schedule.every().day.at("08:00").do(self.send_notification_to_users)
