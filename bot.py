@@ -64,6 +64,7 @@ class PolypBot:
     def send_notification_to_users(self):
         message = checkin.Messages.GREETINGS
         blocks = checkin.Messages.GREETINGS_BLOCK
+        constants.CHECK_INS.clear()
         users_list = self.client.users_list().get('members', None)
         if users_list:
             for u in users_list:
