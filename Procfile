@@ -1,1 +1,1 @@
-web: gunicorn deploy:helloworld
+web: gunicorn helloworld:app
